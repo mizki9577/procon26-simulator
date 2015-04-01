@@ -1,0 +1,490 @@
+// main.js
+
+$(() => {
+// 敷地の幅と高さ (個数)
+const AREA_WIDTH  = 32;
+const AREA_HEIGHT = 32;
+
+// ブロックの幅と高さ (px)
+const BLOCK_WIDTH = 16;
+const BLOCK_HEIGHT = 16;
+
+// 敷地の幅と高さ (px)
+const AREA_PIXEL_WIDTH = AREA_WIDTH * BLOCK_WIDTH;
+const AREA_PIXEL_HEIGHT = AREA_HEIGHT * BLOCK_HEIGHT;
+
+// 敷地の色
+const AREA_COLOR = "#FFFFFF";
+const AREA_BORDER_COLOR = "#000000";
+
+// 障害物の色
+const OBSTACLE_COLOR = "#000000";
+const OBSTACLE_BORDER_COLOR = "#FFFFFF";
+
+// カレントブロックの色
+const CURRENT_BLOCK_COLOR = "#777777";
+const CURRENT_BLOCK_BORDER_COLOR = "#777777";
+
+// 現在位置に置けないときの色
+const UNPUTTABLE_COLOR = "#FF0000";
+const UNPUTTABLE_BORDER_COLOR = "#00FFFF";
+
+// ブロックの色
+const BLOCK_COLOR = "#333333";
+const BLOCK_BORDER_COLOR = "#CCCCCC";
+
+// 敷地のブロックの各ビットの定数
+const EMPTY = 0;  // 何もない
+const OBSTACLE = 1;  // 障害物がある
+const BLOCK = 2;  // 石が固定されている
+const CURRENT_BLOCK = 4;  // 現在選択している石が置かれているがまだ固定されていない
+
+// 回転方向を表す定数
+const CW = 0,
+CCW = 1;
+
+// 平面の方向を表す定数
+const UP    = 0,
+RIGHT = 1,
+DOWN  = 2,
+LEFT  = 3;
+
+// 表裏を表す定数
+const H = true, T = false;
+
+// キーコード
+const KEYCODE = new Map([for (c of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") [c, c.charCodeAt(0)]]);
+
+// 初期問題データ
+const DEFAULT_PROBLEM = "00000000000000001111111111111111\r\n000000000000000011\
+11111111111111\r\n01000000000000001111111111111111\r\n0000000000000000111111111\
+1111111\r\n00000000000000001111111111111111\r\n00000000000000001111111111111111\
+\r\n00000000000000001111111111111111\r\n00000100000000001111111111111111\r\n000\
+00000000000001111111111111111\r\n00000000000000001111111111111111\r\n0000000000\
+0000001111111111111111\r\n00000000010000001111111111111111\r\n11111111111111111\
+111111111111111\r\n11111111111111111111111111111111\r\n111111111111111111111111\
+11111111\r\n11111111111111111111111111111111\r\n1111111111111111111111111111111\
+1\r\n11111111111111111111111111111111\r\n11111111111111111111111111111111\r\n11\
+111111111111111111111111111111\r\n11111111111111111111111111111111\r\n111111111\
+11111111111111111111111\r\n11111111111111111111111111111111\r\n1111111111111111\
+1111111111111111\r\n11111111111111111111111111111111\r\n11111111111111111111111\
+111111111\r\n11111111111111111111111111111111\r\n111111111111111111111111111111\
+11\r\n11111111111111111111111111111111\r\n11111111111111111111111111111111\r\n1\
+1111111111111111111111111111111\r\n11111111111111111111111111111111\r\n\r\n4\r\
+\n01000000\r\n01000000\r\n01000000\r\n01000000\r\n01000000\r\n01000000\r\n01110\
+000\r\n00000000\r\n\r\n00000000\r\n01100000\r\n01100000\r\n01100000\r\n01100000\
+\r\n00000000\r\n00000000\r\n00000000\r\n\r\n00000000\r\n00010000\r\n00010000\r\
+\n01111000\r\n00000000\r\n00000000\r\n00000000\r\n00000000\r\n\r\n10000000\r\n1\
+1000000\r\n01100000\r\n00110000\r\n00011000\r\n00001100\r\n00000110\r\n00000011";
+
+
+class ProconSimulator {
+    constructor() {
+        this.area = [];
+        this.stones = [];
+        this.current_stone = [];
+        this.game_over = false;
+    }
+
+    load_problem(problem_text) {
+        // 問題をロードする
+
+        // 生データを空行で分割し、先頭の敷地データを分離し残りを石データのリストとする
+        let stones_text = problem_text.split(/\r?\n\r?\n/);
+        let area_text = stones_text.shift();
+
+        // 敷地データ文字列を数値型二次元配列に変換する
+        this.area = [];
+        for (let row of area_text.split(/\r?\n/)) {
+            this.area.push(row.split("").map(Number));
+        }
+
+        // 石データ文字列を数値型二次元配列に変換する
+        this.stones = [];
+        for (let stone_text of stones_text) {
+            let stone = [];
+            for (let row of stone_text.split(/\r?\n/)) {
+                stone.push(row.split("").map(Number));
+            }
+            this.stones.push(stone);
+        }
+        this.stones[0].shift(); // 最初の石の1行目はゴミ
+
+        // 諸々をリセットする
+        this.answer = "";
+        this.game_over = false;
+
+        // 最初の石を置く
+        this.pop_stone();
+    }
+
+    pop_stone() {
+        // 石を石リストから取り出して左上に仮設する
+
+        // もう石がない場合
+        if (this.stones.length === 0) {
+            this.game_over = true;
+            return;
+        }
+
+        this.current_stone = this.stones.shift();
+        this.current_stone_x = 0;
+        this.current_stone_y = 0;
+        this.current_stone_w = this.current_stone[0].length;
+        this.current_stone_h = this.current_stone.length;
+        this.current_stone_ht = H;
+        this.current_stone_angle = 0;
+
+        for (let y = 0; y < this.current_stone_h; ++y) {
+            for (let x = 0; x < this.current_stone_w; ++x) {
+                if (this.current_stone[y][x]) {
+                    this.area[y][x] |= CURRENT_BLOCK;
+                }
+            }
+        }
+    }
+
+    put_stone() {
+        // 石を現在の場所に確定する
+
+        // ゲームが終わっていたら何もしない
+        if (this.game_over) {
+            return;
+        }
+
+        // 置けない場合は何もしない
+        if (!this.now_puttable()) {
+            return;
+        }
+
+        const y_start = Math.max(0, this.current_stone_y);
+        const y_limit = Math.min(AREA_HEIGHT, this.current_stone_y + this.current_stone_h);
+        const x_start = Math.max(0, this.current_stone_x);
+        const x_limit = Math.min(AREA_WIDTH, this.current_stone_x + this.current_stone_w);
+
+        for (let y = y_start; y < y_limit; ++y) {
+            for (let x = x_start; x < x_limit; ++x) {
+                if (this.area[y][x] & CURRENT_BLOCK) {
+                    this.area[y][x] &= ~CURRENT_BLOCK;
+                    this.area[y][x] |= BLOCK;
+                }
+            }
+        }
+
+        // answer の更新
+        this.answer = this.answer.concat([this.current_stone_x,
+                                          this.current_stone_y,
+                                          this.current_stone_ht == H ? "H" : "T",
+                                          this.current_stone_angle,
+                                          "\n"].join(" "));
+
+        // 次の石へ
+        this.pop_stone();
+    }
+
+    skip_stone() {
+        // 現在の石をスキップする
+
+        // ゲームが終わっていたら何もしない
+        if (this.game_over) {
+            return;
+        }
+
+        const y_start = Math.max(0, this.current_stone_y);
+        const y_limit = Math.min(AREA_HEIGHT, this.current_stone_y + this.current_stone_h);
+        const x_start = Math.max(0, this.current_stone_x);
+        const x_limit = Math.min(AREA_WIDTH, this.current_stone_x + this.current_stone_w);
+
+        for (let y = y_start; y < y_limit; ++y) {
+            for (let x = x_start; x < x_limit; ++x) {
+                if (this.area[y][x] & CURRENT_BLOCK) {
+                    this.area[y][x] &= ~CURRENT_BLOCK;
+                }
+            }
+        }
+
+        // answer の更新
+        this.answer.concat("\n");
+
+        // 次の石へ
+        this.pop_stone();
+    }
+
+    _refresh_current_stone(procedure) {
+        // 石の位置の更新を行うラッパ関数
+
+        if (this.current_stone === null) {
+            return;
+        }
+
+        const y_start = Math.max(0, this.current_stone_y);
+        const y_limit = Math.min(AREA_HEIGHT, this.current_stone_y + this.current_stone_h);
+        const x_start = Math.max(0, this.current_stone_x);
+        const x_limit = Math.min(AREA_WIDTH, this.current_stone_x + this.current_stone_w);
+
+        for (let y = y_start; y < y_limit; ++y) {
+            for (let x = x_start; x < x_limit; ++x) {
+                if (this.area[y][x] & CURRENT_BLOCK) {
+                    this.area[y][x] &= ~CURRENT_BLOCK;
+                }
+            }
+        }
+
+        procedure();
+
+        for (let y = 0; y < this.current_stone_h; ++y) {
+            for (let x = 0; x < this.current_stone_w; ++x) {
+                if (this.current_stone[y][x]) {
+                    if (0 <= x + this.current_stone_x && x + this.current_stone_x < AREA_WIDTH && 0 <= y + this.current_stone_y && y + this.current_stone_y < AREA_HEIGHT) {
+                        this.area[y + this.current_stone_y][x + this.current_stone_x] |= CURRENT_BLOCK;
+                    }
+                }
+            }
+        }
+    }
+
+    move_stone(direction) {
+        // 石を移動させる
+
+        // ゲームが終わっていたら何もしない
+        if (this.game_over) {
+            return;
+        }
+
+        this._refresh_current_stone( ()=> {
+            switch (direction) {
+                case UP:
+                    --this.current_stone_y;
+                    break;
+                case DOWN:
+                    ++this.current_stone_y;
+                    break;
+                case LEFT:
+                    --this.current_stone_x;
+                    break;
+                case RIGHT:
+                    ++this.current_stone_x;
+                    break;
+            }
+        });
+    }
+
+    rotate_stone(direction) {
+        // 石を回転させる
+
+        // ゲームが終わっていたら何もしない
+        if (this.game_over) {
+            return;
+        }
+
+        this._refresh_current_stone(()=> {
+            let rotated = [];
+            for (let y = 0; y < this.current_stone_w; ++y) {
+                rotated.push(new Array(this.current_stone_h));
+                for (let x = 0; x < this.current_stone_h; ++x) {
+                    if (direction == CW) {
+                        rotated[y][x] = this.current_stone[this.current_stone_h - x - 1][y];
+                    } else if (direction == CCW) {
+                        rotated[y][x] = this.current_stone[x][this.current_stone_h - y - 1];
+                    }
+                }
+            }
+            this.current_stone = rotated;
+        });
+
+        if (direction == CW) {
+            this.current_stone_angle += 90;
+        } else if (direction == CCW) {
+            this.current_stone_angle -= 90;
+        }
+        this.current_stone_angle = (this.current_stone_angle + 360) % 360;
+    }
+
+    flip_stone() {
+        // 石を左右反転させる
+
+        // ゲームが終わっていたら何もしない
+        if (this.game_over) {
+            return;
+        }
+
+        this._refresh_current_stone(()=> {
+            for (let row of this.current_stone) {
+                row.reverse();
+            }
+        });
+        this.current_stone_ht = this.current_stone_ht == H ? T : H;
+    }
+
+    now_puttable() {
+        // 石を現在位置に置けるか調べる
+
+        // ゲームが終わっていたら何もしない
+        if (this.game_over) {
+            return;
+        }
+
+        let area_x, area_y;
+
+        for (let y = 0; y < this.current_stone_h; ++y) {
+            for (let x = 0; x < this.current_stone_w; ++x) {
+                if (this.current_stone[y][x]) {
+                    area_x = x + this.current_stone_x;
+                    area_y = y + this.current_stone_y;
+
+                    if (area_x < 0 || AREA_WIDTH <= area_x || area_y < 0 || AREA_HEIGHT <= area_y) {
+                        return false;
+                    }
+
+                    if (this.area[area_y][area_x] & (BLOCK | OBSTACLE)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    get_score() {
+        // 得点を計算する
+
+        let score = AREA_WIDTH * AREA_HEIGHT;
+        for (let y = 0; y < AREA_HEIGHT; ++y) {
+            for (let x = 0; x < AREA_WIDTH; ++x) {
+                if (this.area[y][x] & (OBSTACLE | BLOCK)) {
+                    --score;
+                }
+            }
+        }
+
+        return score;
+    }
+}
+
+let draw = (canvas, simulator) => {
+    // 描画を行う
+
+    let fill_color, border_color, puttable;
+
+    // ゲームオーバ判定
+    if (simulator.game_over) {
+        alert("GAME OVER!");
+        puttable = true;
+    } else {
+        puttable = simulator.now_puttable();
+    }
+
+    for (let y = 0; y < AREA_HEIGHT; ++y) {
+        for (let x = 0; x < AREA_WIDTH; ++x) {
+            if (simulator.area[y][x] & CURRENT_BLOCK) {
+                if (puttable) {
+                    fill_color = CURRENT_BLOCK_COLOR;
+                    border_color = CURRENT_BLOCK_BORDER_COLOR;
+                } else {
+                    fill_color = UNPUTTABLE_COLOR;
+                    border_color = UNPUTTABLE_BORDER_COLOR;
+                }
+            } else if (simulator.area[y][x] & BLOCK) {
+                fill_color = BLOCK_COLOR;
+                border_color = BLOCK_BORDER_COLOR;
+            } else if (simulator.area[y][x] & OBSTACLE) {
+                fill_color = OBSTACLE_COLOR;
+                border_color = OBSTACLE_BORDER_COLOR;
+            } else {
+                fill_color = AREA_COLOR;
+                border_color = AREA_BORDER_COLOR;
+            }
+            canvas.drawRect({
+                fromCenter: false,
+                fillStyle: fill_color,
+                strokeStyle: border_color,
+                x: x * BLOCK_WIDTH,
+                y: y * BLOCK_HEIGHT,
+                width : BLOCK_WIDTH,
+                height: BLOCK_HEIGHT
+            });
+        }
+    }
+}
+
+
+// 初期化処理
+$(() => {
+    let procon_simulator = new ProconSimulator();
+
+    let refresh = () => {
+        // いろいろを更新する
+        draw($("#canvas"), procon_simulator);
+        $("#score").text(procon_simulator.get_score());
+        $("#answer").val(procon_simulator.answer);
+    }
+
+    let reload = () => {
+        // 問題をリロードする
+        procon_simulator.load_problem($("#problem-textarea").val());
+        refresh();
+    }
+
+    // 問題データをテキストエリアに入力
+    $("#problem-textarea").val(DEFAULT_PROBLEM);
+
+    // canvas のサイズを設定する
+    $("#canvas").attr("width", AREA_PIXEL_WIDTH)
+        .attr("height", AREA_PIXEL_HEIGHT);
+
+    // 問題データをテキストエリアに入力
+    $("#problem-textarea").val(DEFAULT_PROBLEM);
+
+    // イベントの登録
+    $(document).keydown((event) => {
+        if ($("#problem-textarea").is(event.target)) {
+            // テキストエリアではイベントを捕捉しない
+            return;
+        }
+
+        switch (event.which) {
+            case KEYCODE.get("W"):
+                procon_simulator.move_stone(UP);
+                break;
+            case KEYCODE.get("A"):
+                procon_simulator.move_stone(LEFT);
+                break;
+            case KEYCODE.get("S"):
+                procon_simulator.move_stone(DOWN);
+                break;
+            case KEYCODE.get("D"):
+                procon_simulator.move_stone(RIGHT);
+                break;
+            case KEYCODE.get("Q"):
+                procon_simulator.rotate_stone(CCW);
+                break;
+            case KEYCODE.get("E"):
+                procon_simulator.rotate_stone(CW);
+                break;
+            case KEYCODE.get("R"):
+                procon_simulator.flip_stone();
+                break;
+            case KEYCODE.get("Z"):
+                procon_simulator.put_stone();
+                break;
+            case KEYCODE.get("F"):
+                procon_simulator.skip_stone();
+                break;
+            default:
+                return true;
+        }
+
+        refresh();
+        return false;
+    });
+    $("#problem-textarea").change(reload);
+    $("#problem-textarea").keyup(reload);
+    $("#reset").click(reload);
+
+    reload();
+});
+
+});
+
+// vim: set ft=javascript set ts=4 sw=4 et:

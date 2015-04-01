@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Procon26 Simulator</title>
+    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="jcanvas.min.js"></script>
+    <script type="application/javascript" src="main.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Procon26 Simulator</h1>
+    </header>
+
+    <div id="wrapper">
+      <canvas id="canvas"></canvas>
+      <div id="right-column">
+        <button id="reset">Reset</button>
+        <div>Score: <span id="score"></span> zk</div>
+        <label for="answer">Answer:</label><textarea id="answer" readonly></textarea>
+        <label for="problem-textarea">Problem:</label><textarea id="problem-textarea"></textarea>
+        <section id="description">
+          <h3>使い方</h3>
+          <p>
+            WASD で移動, QEで回転, Rで左右反転, Fでスキップ, Zで確定です.
+          </p>
+          <p>
+            問題ファイルの中身を Problem テキストエリアに入力して Reset ボタンを押すとその問題がロードされます. 標準の問題は競技内容に書いてあるやつです.
+          </p>
+          <p>
+            オンラインランキングとかないです. 一体何に使うのか私もよくわからない.
+          </p>
+          <p>
+            ソースコードは <a href="https://github.com/mizki9577/procon26-simulator" target="_blank">こちら</a> で公開しています. ご連絡は <a href="mailto:mizki9577@gmail.com">mizki9577@gmail.com</a> までどうぞ.
+          </p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>
+<!-- vim: set ts=2 sw=2 et: -->

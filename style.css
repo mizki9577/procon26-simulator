@@ -1,0 +1,31 @@
+/* style.css */
+
+canvas#canvas {
+    margin-right: 1em;
+}
+
+div#wrapper {
+    display: flex;
+}
+
+div#right-column {
+    width: 32ex;
+}
+
+textarea#problem-textarea {
+    display: block;
+    font-family: monospace;
+    width: inherit;
+}
+
+textarea#answer {
+    display: block;
+    font-family: monospace;
+    width: inherit;
+}
+
+span#score {
+    font-family: monospace;
+}
+
+/* vim: set ts=4 sw=4 et: /*
