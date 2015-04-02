@@ -41,13 +41,13 @@ const CURRENT_BLOCK = 4;  // 現在選択している石が置かれているが
 
 // 回転方向を表す定数
 const CW = 0,
-CCW = 1;
+      CCW = 1;
 
 // 平面の方向を表す定数
 const UP    = 0,
-RIGHT = 1,
-DOWN  = 2,
-LEFT  = 3;
+      RIGHT = 1,
+      DOWN  = 2,
+      LEFT  = 3;
 
 // 表裏を表す定数
 const H = true, T = false;
@@ -487,4 +487,4 @@ $(() => {
 
 });
 
-// vim: set ft=javascript set ts=4 sw=4 et:
+// vim: ft=javascript ts=4 sw=4 et:

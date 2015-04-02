@@ -607,4 +607,4 @@ $(function () {
     });
 });
 
-// vim: set ft=javascript set ts=4 sw=4 et:
+// vim: ft=javascript ts=4 sw=4 et:
