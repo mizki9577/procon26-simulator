@@ -257,19 +257,14 @@ class ProconSimulator {
         }
 
         this._refresh_current_stone( ()=> {
-            switch (direction) {
-                case UP:
-                    --this.current_stone_y;
-                    break;
-                case DOWN:
-                    ++this.current_stone_y;
-                    break;
-                case LEFT:
-                    --this.current_stone_x;
-                    break;
-                case RIGHT:
-                    ++this.current_stone_x;
-                    break;
+            if (direction == UP) {
+                --this.current_stone_y;
+            } else if (direction == DOWN) {
+                ++this.current_stone_y;
+            } else if (direction == LEFT) {
+                --this.current_stone_x;
+            } else if (direction == RIGHT) {
+                ++this.current_stone_x;
             }
         });
     }
@@ -471,36 +466,26 @@ $(() => {
             return;
         }
 
-        switch (event.which) {
-            case KEYCODE.get("W"):
-                procon_simulator.move_stone(UP);
-                break;
-            case KEYCODE.get("A"):
-                procon_simulator.move_stone(LEFT);
-                break;
-            case KEYCODE.get("S"):
-                procon_simulator.move_stone(DOWN);
-                break;
-            case KEYCODE.get("D"):
-                procon_simulator.move_stone(RIGHT);
-                break;
-            case KEYCODE.get("Q"):
-                procon_simulator.rotate_stone(CCW);
-                break;
-            case KEYCODE.get("E"):
-                procon_simulator.rotate_stone(CW);
-                break;
-            case KEYCODE.get("R"):
-                procon_simulator.flip_stone();
-                break;
-            case KEYCODE.get("Z"):
-                procon_simulator.put_stone();
-                break;
-            case KEYCODE.get("F"):
-                procon_simulator.skip_stone();
-                break;
-            default:
-                return true;
+        if (event.which == KEYCODE.get("W")) {
+            procon_simulator.move_stone(UP);
+        } else if (event.which == KEYCODE.get("A")) {
+            procon_simulator.move_stone(LEFT);
+        } else if (event.which == KEYCODE.get("S")) {
+            procon_simulator.move_stone(DOWN);
+        } else if (event.which == KEYCODE.get("D")) {
+            procon_simulator.move_stone(RIGHT);
+        } else if (event.which == KEYCODE.get("Q")) {
+            procon_simulator.rotate_stone(CCW);
+        } else if (event.which == KEYCODE.get("E")) {
+            procon_simulator.rotate_stone(CW);
+        } else if (event.which == KEYCODE.get("R")) {
+            procon_simulator.flip_stone();
+        } else if (event.which == KEYCODE.get("Z")) {
+            procon_simulator.put_stone();
+        } else if (event.which == KEYCODE.get("F")) {
+            procon_simulator.skip_stone();
+        } else {
+            return true;
         }
 
         refresh();
