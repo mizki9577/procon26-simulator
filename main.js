@@ -197,6 +197,7 @@ $(function () {
                     // 諸々をリセットする
                     this.answer = "";
                     this.game_over = false;
+                    this.first_stone = true;
 
                     // 最初の石を置く
                     this.pop_stone();
@@ -241,6 +242,10 @@ $(function () {
                     // 置けない場合は何もしない
                     if (!this.now_puttable()) {
                         return;
+                    }
+
+                    if (this.first_stone) {
+                        this.first_stone = false;
                     }
 
                     var y_start = Math.max(0, this.current_stone_y);
@@ -441,6 +446,7 @@ $(function () {
 
                     var area_x = undefined,
                         area_y = undefined;
+                    var neighbors = 0;
 
                     for (var y = 0; y < this.current_stone_h; ++y) {
                         for (var x = 0; x < this.current_stone_w; ++x) {
@@ -448,15 +454,37 @@ $(function () {
                                 area_x = x + this.current_stone_x;
                                 area_y = y + this.current_stone_y;
 
+                                // 石が敷地範囲外にあったら置けない
                                 if (area_x < 0 || AREA_WIDTH <= area_x || area_y < 0 || AREA_HEIGHT <= area_y) {
                                     return false;
                                 }
 
+                                // 石が障害物や既に敷いてある石に被っていたら置けない
                                 if (this.area[area_y][area_x] & (BLOCK | OBSTACLE)) {
                                     return false;
                                 }
+
+                                // 石が既に置いてある石と接していなかったら置けない
+                                if (!this.first_stone) {
+                                    if (0 < area_y && this.area[area_y - 1][area_x] & BLOCK) {
+                                        ++neighbors;
+                                    }
+                                    if (area_y <= AREA_HEIGHT && this.area[area_y + 1][area_x] & BLOCK) {
+                                        ++neighbors;
+                                    }
+                                    if (0 < area_x && this.area[area_y][area_x - 1] & BLOCK) {
+                                        ++neighbors;
+                                    }
+                                    if (area_x <= AREA_WIDTH && this.area[area_y][area_x + 1] & BLOCK) {
+                                        ++neighbors;
+                                    }
+                                }
                             }
                         }
+                    }
+
+                    if (!this.first_stone && neighbors == 0) {
+                        return false;
                     }
 
                     return true;
