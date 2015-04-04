@@ -313,7 +313,12 @@ class ProconSimulator {
                 row.reverse();
             }
         });
+
         this.current_stone_ht = this.current_stone_ht == H ? T : H;
+
+        if (this.current_stone_angle % 180 == 90) {
+            this.current_stone_angle = (this.current_stone_angle + 180) % 360;
+        }
     }
 
     now_puttable() {
