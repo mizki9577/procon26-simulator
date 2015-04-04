@@ -344,19 +344,14 @@ $(function () {
                     }
 
                     this._refresh_current_stone(function () {
-                        switch (direction) {
-                            case UP:
-                                --_this.current_stone_y;
-                                break;
-                            case DOWN:
-                                ++_this.current_stone_y;
-                                break;
-                            case LEFT:
-                                --_this.current_stone_x;
-                                break;
-                            case RIGHT:
-                                ++_this.current_stone_x;
-                                break;
+                        if (direction == UP) {
+                            --_this.current_stone_y;
+                        } else if (direction == DOWN) {
+                            ++_this.current_stone_y;
+                        } else if (direction == LEFT) {
+                            --_this.current_stone_x;
+                        } else if (direction == RIGHT) {
+                            ++_this.current_stone_x;
                         }
                     });
                 }
@@ -432,7 +427,12 @@ $(function () {
                             }
                         }
                     });
+
                     this.current_stone_ht = this.current_stone_ht == H ? T : H;
+
+                    if (this.current_stone_angle % 180 == 90) {
+                        this.current_stone_angle = (this.current_stone_angle + 180) % 360;
+                    }
                 }
             },
             now_puttable: {
@@ -592,36 +592,26 @@ $(function () {
                 return;
             }
 
-            switch (event.which) {
-                case KEYCODE.get("W"):
-                    procon_simulator.move_stone(UP);
-                    break;
-                case KEYCODE.get("A"):
-                    procon_simulator.move_stone(LEFT);
-                    break;
-                case KEYCODE.get("S"):
-                    procon_simulator.move_stone(DOWN);
-                    break;
-                case KEYCODE.get("D"):
-                    procon_simulator.move_stone(RIGHT);
-                    break;
-                case KEYCODE.get("Q"):
-                    procon_simulator.rotate_stone(CCW);
-                    break;
-                case KEYCODE.get("E"):
-                    procon_simulator.rotate_stone(CW);
-                    break;
-                case KEYCODE.get("R"):
-                    procon_simulator.flip_stone();
-                    break;
-                case KEYCODE.get("Z"):
-                    procon_simulator.put_stone();
-                    break;
-                case KEYCODE.get("F"):
-                    procon_simulator.skip_stone();
-                    break;
-                default:
-                    return true;
+            if (event.which == KEYCODE.get("W")) {
+                procon_simulator.move_stone(UP);
+            } else if (event.which == KEYCODE.get("A")) {
+                procon_simulator.move_stone(LEFT);
+            } else if (event.which == KEYCODE.get("S")) {
+                procon_simulator.move_stone(DOWN);
+            } else if (event.which == KEYCODE.get("D")) {
+                procon_simulator.move_stone(RIGHT);
+            } else if (event.which == KEYCODE.get("Q")) {
+                procon_simulator.rotate_stone(CCW);
+            } else if (event.which == KEYCODE.get("E")) {
+                procon_simulator.rotate_stone(CW);
+            } else if (event.which == KEYCODE.get("R")) {
+                procon_simulator.flip_stone();
+            } else if (event.which == KEYCODE.get("Z")) {
+                procon_simulator.put_stone();
+            } else if (event.which == KEYCODE.get("F")) {
+                procon_simulator.skip_stone();
+            } else {
+                return true;
             }
 
             refresh();
